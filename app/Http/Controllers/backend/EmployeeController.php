@@ -127,8 +127,8 @@ class EmployeeController extends Controller
      * Store a newly created resource in storage.
      */
     public function store(Request $request)
-        {
-            $request->validate([
+    {
+        $request->validate([
             'full_name'     => 'required|string|max:255',
             'gender'        => 'required',
             'dob'           => 'required|date',
@@ -141,10 +141,19 @@ class EmployeeController extends Controller
             'position_id'   => 'required|exists:positions,position_id',
             'employee_type' => 'required|in:Full-time,Part-time,Contract',
             'status'        => 'required|in:active,resigned',
-            'profile_photo' => 'nullable|string',
+            'profile_photo' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
         ]);
 
-        Employee::create($request->all());
+        $data = $request->all();
+
+        if ($request->hasFile('profile_photo')) {
+            $image = $request->file('profile_photo');
+            $imageName = time().'.'.$image->getClientOriginalExtension();
+            $image->move(public_path('storage/profile_photos'), $imageName);
+            $data['profile_photo'] = 'profile_photos/'.$imageName;
+        }
+
+        Employee::create($data);
 
         return redirect()->route('employee.get_employee')->with('success', 'Employee created successfully!');
     }
@@ -187,11 +196,25 @@ class EmployeeController extends Controller
             'position_id'   => 'required|exists:positions,position_id',
             'employee_type' => 'required|in:Full-time,Part-time,Contract',
             'status'        => 'required|in:active,resigned',
-            'profile_photo' => 'nullable|string',
+            'profile_photo' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
         ]);
 
         $employee = Employee::findOrFail($id);
-        $employee->update($request->all());
+        $data = $request->all();
+
+        if ($request->hasFile('profile_photo')) {
+            // Delete old photo if it exists
+            if ($employee->profile_photo && file_exists(public_path('storage/' . $employee->profile_photo))) {
+                unlink(public_path('storage/' . $employee->profile_photo));
+            }
+
+            $image = $request->file('profile_photo');
+            $imageName = time().'.'.$image->getClientOriginalExtension();
+            $image->move(public_path('storage/profile_photos'), $imageName);
+            $data['profile_photo'] = 'profile_photos/'.$imageName;
+        }
+
+        $employee->update($data);
 
         return redirect()->route('employee.get_employee')->with('success', 'Employee updated successfully!');
     }

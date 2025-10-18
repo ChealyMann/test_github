@@ -38,7 +38,7 @@
                                     </ul>
                                 </div>
                             @endif
-                            <form action="{{ route('employee.store') }}" method="POST">
+                            <form action="{{ route('employee.store') }}" method="POST" enctype="multipart/form-data">
                                 @csrf
                                 <div class="card-body">
 
@@ -47,6 +47,15 @@
                                         <label>Full Name <code class="text-danger">*</code></label>
                                         <input type="text" name="full_name" class="form-control" value="{{ old('full_name') }}">
                                         @error('full_name')
+                                            <small class="text-danger">{{ $message }}</small>
+                                        @enderror
+                                    </div>
+
+                                    <!-- Profile Photo -->
+                                    <div class="form-group">
+                                        <label>Profile Photo</label>
+                                        <input type="file" name="profile_photo" class="form-control">
+                                        @error('profile_photo')
                                             <small class="text-danger">{{ $message }}</small>
                                         @enderror
                                     </div>

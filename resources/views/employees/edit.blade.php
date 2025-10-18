@@ -38,7 +38,7 @@
                                     </ul>
                                 </div>
                             @endif
-                            <form action="{{ route('employee.update', $employee->employee_id) }}" method="POST">
+                            <form action="{{ route('employee.update', $employee->employee_id) }}" method="POST" enctype="multipart/form-data">
                                 @csrf
                                 @method('PUT')
                                 <div class="card-body">
@@ -50,6 +50,18 @@
                                         @error('full_name')
                                             <small class="text-danger">{{ $message }}</small>
                                         @enderror
+                                    </div>
+
+                                    <!-- Profile Photo -->
+                                    <div class="form-group">
+                                        <label>Profile Photo</label>
+                                        <input type="file" name="profile_photo" class="form-control">
+                                        @error('profile_photo')
+                                            <small class="text-danger">{{ $message }}</small>
+                                        @enderror
+                                        @if($employee->profile_photo)
+                                            <img src="{{ asset('storage/' . $employee->profile_photo) }}" alt="Profile Photo" width="100" class="mt-2">
+                                        @endif
                                     </div>
 
                                     <!-- Gender -->

@@ -37,8 +37,9 @@
                                 <table id="getEmployees" class="table table-bordered table-striped">
                                     <thead>
                                     <tr>
-                                        <th>ID</th>
+                                        <th>No</th>
                                         <th>Image</th>
+                                        <th>Employee Code</th>
                                         <th>Fullname</th>
                                         <th>Gender</th>
                                         <th>Date of Birth</th>
@@ -105,55 +106,13 @@
 
 @section('datatable_script')
     <script>
-        /* $(function () {
-            $("#example1").DataTable({
-                    "responsive": true, "lengthChange": false, "autoWidth": false,
-                    "buttons": ["copy", "csv", "excel", "pdf", "print", "colvis"]
-                }).buttons().container().appendTo('#example1_wrapper .col-md-6:eq(0)');
-
-                $('#example2').DataTable({
-                    "paging": true,
-                    "lengthChange": false,
-                    "searching": false,
-                    "ordering": true,
-                    "info": true,
-                    "autoWidth": false,
-                    "responsive": true,
-                });
-        }); */
-
-
-        /* $(document).ready(function () {
-            $('#employeeTable').DataTable({
-                processing: true,
-                serverSide: true,
-                ajax: {
-                    url: '/employee/getDataEmployees',
-                    dataSrc: ''
-                },
-                columns: [
-                    { data: 'employee_id' },
-                    { data: 'profile_photo' },
-                    { data: 'employee_code' }
-                ]
-            });
-        }); */
-
         $(document).ready(function () {
             var table =$('#getEmployees').DataTable({
                 processing: true,
                 serverSide: true,
                 ajax: {
                     url: '/employee/get_employee_json', // your controller endpoint
-                    //dataSrc: '' // because data is an array (not wrapped in { data: [] })
-                    data: function (d) {
-                        // You can add additional parameters here if needed
-                    },
                     dataSrc: function (json) {
-                        // Access the SQL from the response
-                        if (json.sql) {
-                            console.log('SQL Query:', json.sql);
-                        }
                         // Return the data for DataTables
                         return json.data;
                     }
@@ -166,7 +125,6 @@
                             return meta.row + 1; // Display row index + 1
                         }
                     },
-                    /* { data: 'employee_id' }, */
                     { data: 'profile_photo', name: 'profile_photo' },
                     { data: 'employee_code', name: 'employee_code' },
                     { data: 'full_name', name: 'full_name' },
@@ -194,6 +152,8 @@
                 createdRow: function(row, data, dataIndex) {
                     // Set background color of column index 2 (employee_code)
                     $('td:eq(2)', row).css('background-color', '#e0ffe0'); // light green
-                },
-
+                }
+            });
+        });
+    </script>
 @endsection

@@ -16,13 +16,7 @@ class EmployeeController extends Controller
      */
     public function index()
     {
-         $employees = DB::table('employees as e')
-            ->join('departments as d', 'e.department_id', '=', 'd.department_id')
-            ->join('positions as p', 'e.position_id', '=', 'p.position_id')
-            ->select('e.*', 'd.department_name', 'p.position_title', 'e.status')
-            ->get();
-
-
+        $employees = Employee::with(['department', 'position'])->get();
         return view('employees.index', compact('employees'));
     }
 
@@ -31,56 +25,80 @@ class EmployeeController extends Controller
     }
 
 
-    public function get_employee_json(Request $request){
-        //Using Eloquent
-        //$employees = Employee::with(['department', 'position'])->get();
-
-        //Using Query Builder
+    public function get_employee_json(Request $request)
+    {
         $draw = $request->input('draw');
         $start = $request->input('start');
         $length = $request->input('length');
+        $searchValue = $request->input('search.value');
 
-        $query = DB::table('employees as e')
-            ->join('departments as d', 'e.department_id', '=', 'd.department_id')
-            ->join('positions as p', 'e.position_id', '=', 'p.position_id')
-            ->select(
-                'e.*',
-                'd.department_name',
-                'p.position_title'
-            ); //->get();
+        // Base query
+        $query = Employee::with(['department', 'position']);
 
-        // Apply search if needed
-        if ($request->has('search') && $request->input('search.value')) {
-            $searchValue = $request->input('search.value');
-            $query->where('e.full_name', 'like', '%' . $searchValue . '%'); // Adjust your search criteria
+        // Get total records count
+        $totalRecords = $query->count();
+
+        // Apply search filter
+        if (!empty($searchValue)) {
+            $query->where(function ($q) use ($searchValue) {
+                $q->where('full_name', 'like', '%' . $searchValue . '%')
+                    ->orWhere('email', 'like', '%' . $searchValue . '%')
+                    ->orWhereHas('department', function ($q) use ($searchValue) {
+                        $q->where('department_name', 'like', '%' . $searchValue . '%');
+                    })
+                    ->orWhereHas('position', function ($q) use ($searchValue) {
+                        $q->where('position_title', 'like', '%' . $searchValue . '%');
+                    });
+            });
         }
 
-        // Get the SQL query
-        $sql = $query->skip($start)->take($length)->toSql();
+        // Get filtered records count
+        $filteredRecords = $query->count();
 
-        $filteredRecords = $query->count(); // Count after filtering
-        $totalRecords = DB::table('employees')->count(); // Total count
+        // Apply ordering
+        if ($request->has('order')) {
+            $orderColumnIndex = $request->input('order.0.column');
+            $orderDirection = $request->input('order.0.dir');
+            $columns = ['employee_id', 'profile_photo', 'full_name', 'gender', 'dob', 'national_id', 'email', 'phone_number', 'hire_date', 'employee_type', 'address', 'position_title', 'department_name', 'status'];
 
+            if (isset($columns[$orderColumnIndex])) {
+                $orderColumn = $columns[$orderColumnIndex];
+                if ($orderColumn == 'department_name') {
+                    $query->select('employees.* ')
+                        ->join('departments', 'employees.department_id', '=', 'departments.department_id')
+                        ->orderBy('departments.department_name', $orderDirection);
+                } elseif ($orderColumn == 'position_title') {
+                    $query->select('employees.* ')
+                        ->join('positions', 'employees.position_id', '=', 'positions.position_id')
+                        ->orderBy('positions.position_title', $orderDirection);
+                } else {
+                    $query->orderBy($orderColumn, $orderDirection);
+                }
+            }
+        }
 
-        $data = $query->get()->map(function ($employee) {
-            $actions = '<a href="' . route('employee.show', $employee->employee_id) . '" class="btn btn-sm btn-info">View</a>';
-            $actions .= ' <a href="' . route('employee.edit', $employee->employee_id) . '" class="btn btn-sm btn-primary">Edit</a>';
-            $actions .= ' <form action="' . route('employee.destroy', $employee->employee_id) . '" method="POST" style="display:inline-block;">';
+        // Apply pagination
+        $employees = $query->skip($start)->take($length)->get();
+
+        $data = $employees->map(function ($employee) {
+            $actions = '<a href="' . route('employee.show', $employee->employee_id) . '" class="btn btn-sm btn-info">View</a> ';
+            $actions .= '<a href="' . route('employee.edit', $employee->employee_id) . '" class="btn btn-sm btn-primary">Edit</a> ';
+            $actions .= '<form action="' . route('employee.destroy', $employee->employee_id) . '" method="POST" style="display:inline-block;">';
             $actions .= csrf_field() . method_field('DELETE');
             $actions .= '<button type="submit" class="btn btn-sm btn-danger" onclick="return confirm(\'Are you sure?\')">Delete</button>';
             $actions .= '</form>';
 
             $employee->actions = $actions;
+            $employee->department_name = $employee->department->department_name;
+            $employee->position_title = $employee->position->position_title;
             return $employee;
         });
 
-        // Prepare the response for DataTables (or your client)
         $response = [
             'draw' => intval($draw),
             'recordsTotal' => intval($totalRecords),
             'recordsFiltered' => intval($filteredRecords),
             'data' => $data,
-            'sql' => $sql, // Add the SQL to the response
         ];
 
         return response()->json($response);
@@ -105,22 +123,20 @@ class EmployeeController extends Controller
             $request->validate([
             'full_name'     => 'required|string|max:255',
             'gender'        => 'required',
+            'dob'           => 'required|date',
+            'national_id'   => 'required|string|max:255|unique:employees,national_id',
             'email'         => 'required|email|unique:employees,email',
             'phone_number'  => 'required',
+            'address'       => 'required|string',
+            'hire_date'     => 'required|date',
             'department_id' => 'required|exists:departments,department_id',
             'position_id'   => 'required|exists:positions,position_id',
+            'employee_type' => 'required|in:Full-time,Part-time,Contract',
+            'status'        => 'required|in:active,resigned',
+            'profile_photo' => 'nullable|string',
         ]);
 
-        Employee::create([
-            'full_name'     => $request->full_name,
-            'gender'        => $request->gender,
-            'dob'           => $request->dob,
-            'email'         => $request->email,
-            'phone_number'  => $request->phone_number,
-            'department_id' => $request->department_id,
-            'position_id'   => $request->position_id,
-            'status'        => $request->status,
-        ]);
+        Employee::create($request->all());
 
         return redirect()->route('employee.index')->with('success', 'Employee created successfully!');
     }
@@ -139,7 +155,10 @@ class EmployeeController extends Controller
      */
     public function edit(string $id)
     {
-        //
+        $employee = Employee::findOrFail($id);
+        $departments = Department::all();
+        $positions = Positions::all();
+        return view('employees.edit', compact('employee', 'departments', 'positions'));
     }
 
     /**
@@ -147,7 +166,26 @@ class EmployeeController extends Controller
      */
     public function update(Request $request, string $id)
     {
-        //
+        $request->validate([
+            'full_name'     => 'required|string|max:255',
+            'gender'        => 'required',
+            'dob'           => 'required|date',
+            'national_id'   => 'required|string|max:255|unique:employees,national_id,' . $id . ',employee_id',
+            'email'         => 'required|email|unique:employees,email,' . $id . ',employee_id',
+            'phone_number'  => 'required',
+            'address'       => 'required|string',
+            'hire_date'     => 'required|date',
+            'department_id' => 'required|exists:departments,department_id',
+            'position_id'   => 'required|exists:positions,position_id',
+            'employee_type' => 'required|in:Full-time,Part-time,Contract',
+            'status'        => 'required|in:active,resigned',
+            'profile_photo' => 'nullable|string',
+        ]);
+
+        $employee = Employee::findOrFail($id);
+        $employee->update($request->all());
+
+        return redirect()->route('employee.index')->with('success', 'Employee updated successfully!');
     }
 
     /**
@@ -155,6 +193,9 @@ class EmployeeController extends Controller
      */
     public function destroy(string $id)
     {
-        //
+        $employee = Employee::findOrFail($id);
+        $employee->delete();
+
+        return redirect()->route('employee.index')->with('success', 'Employee deleted successfully!');
     }
 }

@@ -119,8 +119,7 @@ class EmployeeController extends Controller
     public function create()
     {
         $departments = Department::all();
-        $positions   = Positions::all();
-        return view('employees.create',compact('departments', 'positions'));
+        return view('employees.create',compact('departments'));
     }
 
     /**
@@ -228,5 +227,11 @@ class EmployeeController extends Controller
         $employee->delete();
 
         return redirect()->route('employee.get_employee')->with('success', 'Employee deleted successfully!');
+    }
+
+    public function getPositionsByDepartment($department_id)
+    {
+        $positions = Positions::where('department_id', $department_id)->get();
+        return response()->json($positions);
     }
 }

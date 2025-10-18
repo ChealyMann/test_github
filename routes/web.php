@@ -23,6 +23,7 @@ Route::resource('/department', DepartmentController::class);
 
 Route::get('/employee/get_employee', [EmployeeController::class, 'get_employee'])->name('employee.get_employee');
 Route::get('/employee/get_employee_json', [EmployeeController::class, 'get_employee_json'])->name('employee.get_employee_json');
+Route::get('/employees/get-positions-by-department/{department_id}', [EmployeeController::class, 'getPositionsByDepartment'])->name('employees.getPositionsByDepartment');
 Route::resource('/employee', EmployeeController::class);
 
 

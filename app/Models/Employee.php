@@ -2,10 +2,12 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Employee extends Model
 {
+    use HasFactory;
     protected $table = 'employees';   
     protected $primaryKey = 'employee_id';
     public $timestamps = true; // if you use created_at/updated_at

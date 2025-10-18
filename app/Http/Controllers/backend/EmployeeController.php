@@ -81,14 +81,22 @@ class EmployeeController extends Controller
         $employees = $query->skip($start)->take($length)->get();
 
         $data = $employees->map(function ($employee) {
-            $actions = '<a href="' . route('employee.show', $employee->employee_id) . '" class="btn btn-sm btn-info">View</a> ';
-            $actions .= '<a href="' . route('employee.edit', $employee->employee_id) . '" class="btn btn-sm btn-primary">Edit</a> ';
+            $actions = '<a href="' . route('employee.show', $employee->employee_id) . '" class="btn btn-sm btn-info"><i class="fas fa-eye"></i></a> ';
+            $actions .= '<a href="' . route('employee.edit', $employee->employee_id) . '" class="btn btn-sm btn-primary"><i class="fas fa-edit"></i></a> ';
             $actions .= '<form action="' . route('employee.destroy', $employee->employee_id) . '" method="POST" style="display:inline-block;">';
             $actions .= csrf_field() . method_field('DELETE');
-            $actions .= '<button type="submit" class="btn btn-sm btn-danger" onclick="return confirm(\'Are you sure?\')">Delete</button>';
+            $actions .= '<button type="submit" class="btn btn-sm btn-danger" onclick="return confirm(\'Are you sure?\')"><i class="fas fa-trash"></i></button>';
             $actions .= '</form>';
 
+            $status = '';
+            if ($employee->status == 'active') {
+                $status = '<span class="badge badge-success">Active</span>';
+            } else {
+                $status = '<span class="badge badge-danger">Resigned</span>';
+            }
+
             $employee->actions = $actions;
+            $employee->status = $status;
             $employee->department_name = $employee->department->department_name;
             $employee->position_title = $employee->position->position_title;
             return $employee;
@@ -138,7 +146,7 @@ class EmployeeController extends Controller
 
         Employee::create($request->all());
 
-        return redirect()->route('employee.index')->with('success', 'Employee created successfully!');
+        return redirect()->route('employee.get_employee')->with('success', 'Employee created successfully!');
     }
 
     /**

@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('employees', function (Blueprint $table) {
             $table->id('employee_id');
             $table->string('full_name')->uniqid();
-            $table->enum('gender',['active','inactive'])->default('active');
+            $table->enum('gender',['Male','Female']);
             $table->date('dob');
             $table->string('national_id')->uniqid();
             $table->string('email')->uniqid();
@@ -23,9 +23,9 @@ return new class extends Migration
             $table->date('hire_date');
             $table->unsignedBigInteger('department_id');
             $table->unsignedBigInteger('position_id');
-            $table->enum('employee_type',['Full-time','Part-item','Contract']);
+            $table->enum('employee_type',['Full-time','Part-time','Contract']);
             $table->enum('status',['active','resigned']);
-            $table->string('profile_photo');
+            $table->string('profile_photo')->nullable();
             $table->timestamps();
 
               // Foreign key constraint

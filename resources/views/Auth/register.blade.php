@@ -24,7 +24,17 @@
         <div class="card-body">
             <p class="login-box-msg">Register a new membership</p>
 
-            <form action="{{ route('register') }}" method="POST">
+            @if ($errors->any())
+                <div class="alert alert-danger">
+                    <ul>
+                        @foreach ($errors->all() as $error)
+                            <li>{{ $error }}</li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endif
+
+            <form action="{{ route('register.store') }}" method="POST">
                 @csrf
 
                 <div class="input-group mb-3">
@@ -41,6 +51,32 @@
                     <div class="input-group-append">
                         <div class="input-group-text">
                             <span class="fas fa-envelope"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="input-group mb-3">
+                    <select name="language_id" class="form-control" required>
+                        @foreach($languages as $language)
+                            <option value="{{ $language->id }}">{{ $language->name }}</option>
+                        @endforeach
+                    </select>
+                    <div class="input-group-append">
+                        <div class="input-group-text">
+                            <span class="fas fa-language"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="input-group mb-3">
+                    <select name="role_id" class="form-control" required>
+                        @foreach($roles as $role)
+                            <option value="{{ $role->id }}">{{ $role->name }}</option>
+                        @endforeach
+                    </select>
+                    <div class="input-group-append">
+                        <div class="input-group-text">
+                            <span class="fas fa-user-tag"></span>
                         </div>
                     </div>
                 </div>

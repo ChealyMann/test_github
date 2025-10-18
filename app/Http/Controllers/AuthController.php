@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Language;
+use App\Models\Role;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -27,7 +29,9 @@ class AuthController extends Controller
     }
 
     function registerForm(){
-        return view('auth.register');
+        $roles = Role::all();
+        $languages = Language::all();
+        return view('auth.register', compact('roles', 'languages'));
 
     }
 
@@ -38,6 +42,8 @@ class AuthController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
             'password' => 'required|string|min:6|confirmed',
+            'role_id' => 'required|exists:roles,id',
+            'language_id' => 'required|exists:languages,id',
         ]);
 
         if ($validator->fails()) {
@@ -51,9 +57,24 @@ class AuthController extends Controller
             'name' => $request->name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
+            'role_id' => $request->role_id,
+            'language_id' => $request->language_id,
         ]);
 
         Auth::login($user);
+
+        return redirect('/');
+    }
+
+    public function logout(Request $request)
+    {
+        Auth::logout();
+
+        $request->session()->invalidate();
+
+        $request->session()->regenerateToken();
+
+        return redirect('/login');
     }
 
 }

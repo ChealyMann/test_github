@@ -32,11 +32,13 @@ Route::controller(AttendenceController::class)->group(function(){
     Route::get('/attendences','index')->name('attendences.index');
 });
 
-Route::get('/login', [AuthController::class, 'loginForm'])->name('lForm');
-Route::post('/login', [AuthController::class, 'login'])->name('login');
+Route::get('/login', [AuthController::class, 'loginForm'])->name('login');
+Route::post('/login', [AuthController::class, 'login'])->name('login.store');
 
-Route::get('/register', [AuthController::class, 'registerForm'])->name('rForm');
-Route::post('/register', [AuthController::class, 'register'])->name('register');
+Route::get('/register', [AuthController::class, 'registerForm'])->name('register');
+Route::post('/register', [AuthController::class, 'register'])->name('register.store');
+
+Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
 // Fallback Route
 

@@ -22,10 +22,10 @@
         <div class="card-body">
             <p class="login-box-msg">Sign in to start your session</p>
 
-            <form action="" method="post">
+            <form action="{{ route('login.store') }}" method="post">
                 @csrf
                 <div class="input-group mb-3">
-                    <input type="email" class="form-control" placeholder="Email" fdprocessedid="809p7">
+                    <input type="email" name="email" class="form-control" placeholder="Email" fdprocessedid="809p7">
                     <div class="input-group-append">
                         <div class="input-group-text">
                             <span class="fas fa-envelope"></span>
@@ -33,7 +33,7 @@
                     </div>
                 </div>
                 <div class="input-group mb-3">
-                    <input type="password" class="form-control" placeholder="Password" fdprocessedid="dtrnsp">
+                    <input type="password" name="password" class="form-control" placeholder="Password" fdprocessedid="dtrnsp">
                     <div class="input-group-append">
                         <div class="input-group-text">
                             <span class="fas fa-lock"></span>
@@ -57,8 +57,18 @@
                 </div>
             </form>
 
+            @if($errors->any())
+                <div class="alert alert-danger mt-3">
+                    <ul>
+                        @foreach($errors->all() as $error)
+                            <li>{{ $error }}</li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endif
+
             <p class="mb-0">
-                <a href="register.html" class="text-center">Register a new membership</a>
+                <a href="{{ route('register') }}" class="text-center">Register a new membership</a>
             </p>
         </div>
         <!-- /.card-body -->

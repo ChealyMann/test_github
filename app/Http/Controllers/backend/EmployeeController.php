@@ -185,7 +185,7 @@ class EmployeeController extends Controller
         $employee = Employee::findOrFail($id);
         $employee->update($request->all());
 
-        return redirect()->route('employee.index')->with('success', 'Employee updated successfully!');
+        return redirect()->route('employee.get_employee')->with('success', 'Employee updated successfully!');
     }
 
     /**
@@ -196,6 +196,6 @@ class EmployeeController extends Controller
         $employee = Employee::findOrFail($id);
         $employee->delete();
 
-        return redirect()->route('employee.index')->with('success', 'Employee deleted successfully!');
+        return redirect()->route('employee.get_employee')->with('success', 'Employee deleted successfully!');
     }
 }

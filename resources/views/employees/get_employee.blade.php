@@ -4,6 +4,14 @@
 @section('content')
     <div class="content-wrapper">
 
+        @if (session('success'))
+            <script>
+                document.addEventListener('DOMContentLoaded', function () {
+                    Swal.fire('Success', '{{ session('success') }}', 'success');
+                });
+            </script>
+        @endif
+
         <!-- Page Header -->
         <div class="content-header">
             <div class="container-fluid">
@@ -125,7 +133,13 @@
                             return meta.row + 1; // Display row index + 1
                         }
                     },
-                    { data: 'profile_photo', name: 'profile_photo' },
+                    { 
+                        data: 'profile_photo', 
+                        name: 'profile_photo', 
+                        render: function(data, type, row) {
+                            return '<img src="{{ asset('storage/') }}/' + data + '" alt="Profile" width="50" height="50">';
+                        }
+                    },
                     { data: 'employee_code', name: 'employee_code' },
                     { data: 'full_name', name: 'full_name' },
                     { data: 'gender', name: 'gender' },
@@ -152,7 +166,31 @@
                 createdRow: function(row, data, dataIndex) {
                     // Set background color of column index 2 (employee_code)
                     $('td:eq(2)', row).css('background-color', '#e0ffe0'); // light green
+                },
+                "paging": true,
+                "searching": true,
+                "ordering": true,
+                "info": true,
+                responsive: true,
+                lengthChange: false,
+                autoWidth: false,
+                dom: 'Bfrtip', // REQUIRED FOR BUTTONS
+                buttons: ["copy", "csv", "excel", "pdf", "print", "colvis"],
+
+                pageLength: 5,
+                lengthMenu: [
+                    [5, 10, 25, 50, -1],
+                    ['5 rows', '10 rows', '25 rows', '50 rows', 'Show all']
+                ],
+                language: {
+                    paginate: {
+                        first: 'First Page',
+                        previous: 'Back',
+                        next: 'Forward',
+                        last: 'Last Page'
+                    }
                 }
+
             });
         });
     </script>

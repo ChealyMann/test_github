@@ -14,11 +14,16 @@ class Employee extends Model
         'full_name',
         'gender',
         'dob',
+        'national_id',
         'email',
         'phone_number',
+        'address',
+        'hire_date',
         'department_id',
         'position_id',
+        'employee_type',
         'status',
+        'profile_photo',
     ];
 
     // Department relation

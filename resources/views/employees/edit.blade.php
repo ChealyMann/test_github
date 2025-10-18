@@ -78,6 +78,15 @@
                                 <h3 class="card-title">Fill Employee</h3>
                             </div>
                             <div class="card-body">
+                                <!-- Employee Code -->
+                                <div class="form-group">
+                                    <label>Employee Code <code class="text-danger">*</code></label>
+                                    <input type="text" name="employee_code" class="form-control" value="{{ old('employee_code', $employee->employee_code) }}" readonly>
+                                    @error('employee_code')
+                                        <small class="text-danger">{{ $message }}</small>
+                                    @enderror
+                                </div>
+
                                 <!-- Full Name -->
                                 <div class="form-group">
                                     <label>Full Name <code class="text-danger">*</code></label>

@@ -43,6 +43,7 @@ class EmployeeController extends Controller
             $query->where(function ($q) use ($searchValue) {
                 $q->where('full_name', 'like', '%' . $searchValue . '%')
                     ->orWhere('email', 'like', '%' . $searchValue . '%')
+                    ->orWhere('employee_code', 'like', '%' . $searchValue . '%') // Add this line
                     ->orWhereHas('department', function ($q) use ($searchValue) {
                         $q->where('department_name', 'like', '%' . $searchValue . '%');
                     })
@@ -59,7 +60,7 @@ class EmployeeController extends Controller
         if ($request->has('order')) {
             $orderColumnIndex = $request->input('order.0.column');
             $orderDirection = $request->input('order.0.dir');
-            $columns = ['employee_id', 'profile_photo', 'full_name', 'gender', 'dob', 'national_id', 'email', 'phone_number', 'hire_date', 'employee_type', 'address', 'position_title', 'department_name', 'status'];
+            $columns = ['employee_id','employee_code', 'profile_photo', 'full_name', 'gender', 'dob', 'national_id', 'email', 'phone_number', 'hire_date', 'employee_type', 'address', 'position_title', 'department_name', 'status'];
 
             if (isset($columns[$orderColumnIndex])) {
                 $orderColumn = $columns[$orderColumnIndex];
@@ -119,7 +120,11 @@ class EmployeeController extends Controller
     public function create()
     {
         $departments = Department::all();
-        return view('employees.create',compact('departments'));
+        do {
+            $employee_code = 'EMP-' . date('Ymd') . '-' . substr(str_shuffle("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"), 0, 6);
+        } while (Employee::where('employee_code', $employee_code)->exists());
+
+        return view('employees.create',compact('departments','employee_code'));
     }
 
     /**
@@ -128,6 +133,7 @@ class EmployeeController extends Controller
     public function store(Request $request)
     {
         $request->validate([
+            'employee_code' => 'required|string|unique:employees,employee_code',
             'full_name'     => 'required|string|max:255',
             'gender'        => 'required',
             'dob'           => 'required|date',
@@ -173,8 +179,7 @@ class EmployeeController extends Controller
     {
         $employee = Employee::findOrFail($id);
         $departments = Department::all();
-        $positions = Positions::all();
-        return view('employees.edit', compact('employee', 'departments', 'positions'));
+        return view('employees.edit', compact('employee', 'departments'));
     }
 
     /**
@@ -183,6 +188,7 @@ class EmployeeController extends Controller
     public function update(Request $request, string $id)
     {
         $request->validate([
+            'employee_code' => 'required|string',
             'full_name'     => 'required|string|max:255',
             'gender'        => 'required',
             'dob'           => 'required|date',
@@ -212,6 +218,8 @@ class EmployeeController extends Controller
             $image->move(public_path('storage/profile_photos'), $imageName);
             $data['profile_photo'] = 'profile_photos/'.$imageName;
         }
+
+        unset($data['employee_code']);
 
         $employee->update($data);
 

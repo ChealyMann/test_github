@@ -13,6 +13,7 @@ class Employee extends Model
     public $timestamps = true; // if you use created_at/updated_at
 
     protected $fillable = [
+        'employee_code',
         'full_name',
         'gender',
         'dob',

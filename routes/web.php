@@ -1,7 +1,7 @@
 <?php
 
-    use App\Http\Controllers\AuthController;
-    use App\Http\Controllers\backend\AttendenceController;
+use App\Http\Controllers\AuthController;
+use App\Http\Controllers\backend\AttendenceController;
 use App\Http\Controllers\backend\DashboardController;
 use App\Http\Controllers\backend\DepartmentController;
 use App\Http\Controllers\backend\EmployeeController;
@@ -30,11 +30,13 @@ Route::middleware(['auth'])->group(function () {
 });
 
 // Routes that do not require authentication
-Route::get('/login', [AuthController::class, 'loginForm'])->name('login');
-Route::post('/login', [AuthController::class, 'login'])->name('login.store');
+Route::middleware(['guest'])->group(function () {
+    Route::get('/login', [AuthController::class, 'loginForm'])->name('login');
+    Route::post('/login', [AuthController::class, 'login'])->name('login.store');
 
-Route::get('/register', [AuthController::class, 'registerForm'])->name('register');
-Route::post('/register', [AuthController::class, 'register'])->name('register.store');
+    Route::get('/register', [AuthController::class, 'registerForm'])->name('register');
+    Route::post('/register', [AuthController::class, 'register'])->name('register.store');
+});
 
 // Fallback Route
 Route::fallback(function(){

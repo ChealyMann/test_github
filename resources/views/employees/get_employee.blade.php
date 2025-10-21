@@ -5,11 +5,9 @@
     <div class="content-wrapper">
 
         @if (session('success'))
-            <script>
-                document.addEventListener('DOMContentLoaded', function () {
-                    Swal.fire('Success', '{{ session('success') }}', 'success');
-                });
-            </script>
+            <div class="alert alert-success">
+                {{ session('success') }}
+            </div>
         @endif
 
         <!-- Page Header -->

@@ -69,10 +69,3 @@ composer test
 *   **Routing:** Routes are defined in `routes/web.php` for web routes and `routes/api.php` for API routes.
 *   **Testing:** PHPUnit is used for testing. Tests are located in the `tests` directory.
 
-rathana
-*   **Framework:** The project follows the standard Laravel 12 project structure and conventions.
-*   **Styling:** Tailwind CSS is used for styling. Utility-first CSS is preferred.
-*   **Frontend:** JavaScript and CSS are compiled using Vite. The main entry points are `resources/css/app.css` and `resources/js/app.js`.
-*   **Database:** Database schema changes are managed through migrations.
-*   **Routing:** Routes are defined in `routes/web.php` for web routes and `routes/api.php` for API routes.
-*   **Testing:** PHPUnit is used for testing. Tests are located in the `tests` directory.

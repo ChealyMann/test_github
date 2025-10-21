@@ -8,6 +8,7 @@ use App\Models\Department;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
+use Intervention\Image\Facades\Image;
 
 class EmployeeController extends Controller
 {
@@ -154,8 +155,12 @@ class EmployeeController extends Controller
         if ($request->hasFile('profile_photo')) {
             $image = $request->file('profile_photo');
             $imageName = time().'.'.$image->getClientOriginalExtension();
-            $image->move(public_path('storage/profile_photos'), $imageName);
-            $data['profile_photo'] = 'profile_photos/'.$imageName;
+            $imagePath = public_path('uploads/employees/' . $imageName);
+
+            // Resize and save the image
+            Image::make($image->getRealPath())->resize(300, 300)->save($imagePath);
+
+            $data['profile_photo'] = 'uploads/employees/'.$imageName;
         }
 
         Employee::create($data);
@@ -209,14 +214,18 @@ class EmployeeController extends Controller
 
         if ($request->hasFile('profile_photo')) {
             // Delete old photo if it exists
-            if ($employee->profile_photo && file_exists(public_path('storage/' . $employee->profile_photo))) {
-                unlink(public_path('storage/' . $employee->profile_photo));
+            if ($employee->profile_photo && file_exists(public_path($employee->profile_photo))) {
+                unlink(public_path($employee->profile_photo));
             }
 
             $image = $request->file('profile_photo');
             $imageName = time().'.'.$image->getClientOriginalExtension();
-            $image->move(public_path('storage/profile_photos'), $imageName);
-            $data['profile_photo'] = 'profile_photos/'.$imageName;
+            $imagePath = public_path('uploads/employees/' . $imageName);
+
+            // Resize and save the image
+            Image::make($image->getRealPath())->resize(300, 300)->save($imagePath);
+
+            $data['profile_photo'] = 'uploads/employees/'.$imageName;
         }
 
         unset($data['employee_code']);

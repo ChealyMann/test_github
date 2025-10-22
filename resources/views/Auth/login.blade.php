@@ -20,6 +20,12 @@
             <a href="../../index2.html" class="h1"><b>Admin</b>LTE</a>
         </div>
         <div class="card-body">
+            @if($errors->any() && isset($errors->all()[1]))
+                <div class="alert alert-danger mt-3">
+                    {{ $errors->all()[1] }}
+                </div>
+            @endif
+
             <p class="login-box-msg">Sign in to start your session</p>
 
             <form action="{{ route('login.store') }}" method="post">
@@ -57,15 +63,7 @@
                 </div>
             </form>
 
-            @if($errors->any())
-                <div class="alert alert-danger mt-3">
-                    <ul>
-                        @foreach($errors->all() as $error)
-                            <li>{{ $error }}</li>
-                        @endforeach
-                    </ul>
-                </div>
-            @endif
+
 
             <p class="mb-0">
                 <a href="{{ route('register') }}" class="text-center">Register a new membership</a>

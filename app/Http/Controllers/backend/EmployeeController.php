@@ -6,6 +6,7 @@
     use App\Models\Positions;
     use App\Models\Department;
     use Illuminate\Http\Request;
+    use Illuminate\Support\Str;
     use App\Http\Controllers\Controller;
     use Intervention\Image\Laravel\Facades\Image; // This 'use' statement is correct for v3
 
@@ -153,13 +154,10 @@
 
             if ($request->hasFile('profile_photo')) {
                 $image = $request->file('profile_photo');
-                $imageName = time().'.'.$image->getClientOriginalExtension();
+                $imageName = Str::random(40).'.jpg';
                 $imagePath = public_path('uploads/employees/' . $imageName);
-
-                //Resize and save the image
-                // --- FIX: Use Image::read() for Intervention v3 ---
-                Image::read($image->getRealPath())->resize(300, 300)->save($imagePath);
-
+                // The fix
+                Image::read($image->getRealPath())->resize(300, 300)->toJpg(80)->save($imagePath);
                 $data['profile_photo'] = 'uploads/employees/'.$imageName;
             }
 
@@ -219,12 +217,9 @@
                 }
 
                 $image = $request->file('profile_photo');
-                $imageName = time().'.'.$image->getClientOriginalExtension();
+                $imageName = Str::random(40).'.jpg';
                 $imagePath = public_path('uploads/employees/' . $imageName);
-
-                // Resize and save the image
-                // --- FIX: Use Image::read() for Intervention v3 ---
-                Image::read($image->getRealPath())->resize(300, 300)->save($imagePath);
+                Image::read($image->getRealPath())->resize(300, 300)->toJpg(80)->save($imagePath);
 
                 $data['profile_photo'] = 'uploads/employees/'.$imageName;
             }

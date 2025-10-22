@@ -16,8 +16,14 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withProviders([
-        App\Providers\ImageServiceProvider::class,
+        // App\Providers\ImageServiceProvider::class,
+        Intervention\Image\Laravel\ServiceProvider::class
     ])
+    ->withMiddleware(function (Middleware $middleware) {
+        $middleware->alias([
+            'Image' => Intervention\Image\Laravel\Facades\Image::class,
+        ]);
+    })
     ->withExceptions(function (Exceptions $exceptions) {
         //
     })->create();

@@ -104,7 +104,7 @@
                                         <small class="text-danger">{{ $message }}</small>
                                     @enderror
                                     @if($employee->profile_photo)
-                                        <img src="{{ asset('storage/' . $employee->profile_photo) }}" alt="Profile Photo" width="100" class="mt-2">
+                                        <img src="{{ asset($employee->profile_photo) }}" alt="Profile Photo" width="100" class="mt-2">
                                     @endif
                                 </div>
 

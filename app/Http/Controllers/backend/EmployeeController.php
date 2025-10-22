@@ -1,254 +1,256 @@
 <?php
 
-namespace App\Http\Controllers\backend;
+    namespace App\Http\Controllers\backend;
 
-use App\Models\Employee;
-use App\Models\Positions;
-use App\Models\Department;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
-use App\Http\Controllers\Controller;
-use Intervention\Image\Facades\Image;
+    use App\Models\Employee;
+    use App\Models\Positions;
+    use App\Models\Department;
+    use Illuminate\Http\Request;
+    use Illuminate\Support\Str;
+    use App\Http\Controllers\Controller;
+    use Intervention\Image\Laravel\Facades\Image; // This 'use' statement is correct for v3
 
-class EmployeeController extends Controller
-{
-    /**
-     * Display a listing of the resource.
-     */
-    public function index()
+    class EmployeeController extends Controller
     {
-        $employees = Employee::with(['department', 'position'])->get();
-        return view('employees.index', compact('employees'));
-    }
-
-    public function get_employee(){
-        return view('employees.get_employee');
-    }
-
-
-    public function get_employee_json(Request $request)
-    {
-        $draw = $request->input('draw');
-        $start = $request->input('start');
-        $length = $request->input('length');
-        $searchValue = $request->input('search.value');
-
-        // Base query
-        $query = Employee::with(['department', 'position']);
-
-        // Get total records count
-        $totalRecords = $query->count();
-
-        // Apply search filter
-        if (!empty($searchValue)) {
-            $query->where(function ($q) use ($searchValue) {
-                $q->where('full_name', 'like', '%' . $searchValue . '%')
-                    ->orWhere('email', 'like', '%' . $searchValue . '%')
-                    ->orWhere('employee_code', 'like', '%' . $searchValue . '%') // Add this line
-                    ->orWhereHas('department', function ($q) use ($searchValue) {
-                        $q->where('department_name', 'like', '%' . $searchValue . '%');
-                    })
-                    ->orWhereHas('position', function ($q) use ($searchValue) {
-                        $q->where('position_title', 'like', '%' . $searchValue . '%');
-                    });
-            });
+        /**
+         * Display a listing of the resource.
+         */
+        public function index()
+        {
+            $employees = Employee::with(['department', 'position'])->get();
+            return view('employees.index', compact('employees'));
         }
 
-        // Get filtered records count
-        $filteredRecords = $query->count();
+        public function get_employee(){
+            return view('employees.get_employee');
+        }
 
-        // Apply ordering
-        if ($request->has('order')) {
-            $orderColumnIndex = $request->input('order.0.column');
-            $orderDirection = $request->input('order.0.dir');
-            $columns = ['employee_id','employee_code', 'profile_photo', 'full_name', 'gender', 'dob', 'national_id', 'email', 'phone_number', 'hire_date', 'employee_type', 'address', 'position_title', 'department_name', 'status'];
 
-            if (isset($columns[$orderColumnIndex])) {
-                $orderColumn = $columns[$orderColumnIndex];
-                if ($orderColumn == 'department_name') {
-                    $query->select('employees.* ')
-                        ->join('departments', 'employees.department_id', '=', 'departments.department_id')
-                        ->orderBy('departments.department_name', $orderDirection);
-                } elseif ($orderColumn == 'position_title') {
-                    $query->select('employees.* ')
-                        ->join('positions', 'employees.position_id', '=', 'positions.position_id')
-                        ->orderBy('positions.position_title', $orderDirection);
-                } else {
-                    $query->orderBy($orderColumn, $orderDirection);
+        public function get_employee_json(Request $request)
+        {
+            $draw = $request->input('draw');
+            $start = $request->input('start');
+            $length = $request->input('length');
+            $searchValue = $request->input('search.value');
+
+            // Base query
+            $query = Employee::with(['department', 'position']);
+
+            // Get total records count
+            $totalRecords = $query->count();
+
+            // Apply search filter
+            if (!empty($searchValue)) {
+                $query->where(function ($q) use ($searchValue) {
+                    $q->where('full_name', 'like', '%' . $searchValue . '%')
+                        ->orWhere('email', 'like', '%' . $searchValue . '%')
+                        ->orWhere('employee_code', 'like', '%' . $searchValue . '%') // Add this line
+                        ->orWhereHas('department', function ($q) use ($searchValue) {
+                            $q->where('department_name', 'like', '%' . $searchValue . '%');
+                        })
+                        ->orWhereHas('position', function ($q) use ($searchValue) {
+                            $q->where('position_title', 'like', '%' . $searchValue . '%');
+                        });
+                });
+            }
+
+            // Get filtered records count
+            $filteredRecords = $query->count();
+
+            // Apply ordering
+            if ($request->has('order')) {
+                $orderColumnIndex = $request->input('order.0.column');
+                $orderDirection = $request->input('order.0.dir');
+                $columns = ['employee_id','employee_code', 'profile_photo', 'full_name', 'gender', 'dob', 'national_id', 'email', 'phone_number', 'hire_date', 'employee_type', 'address', 'position_title', 'department_name', 'status'];
+
+                if (isset($columns[$orderColumnIndex])) {
+                    $orderColumn = $columns[$orderColumnIndex];
+                    if ($orderColumn == 'department_name') {
+                        $query->select('employees.* ')
+                            ->join('departments', 'employees.department_id', '=', 'departments.department_id')
+                            ->orderBy('departments.department_name', $orderDirection);
+                    } elseif ($orderColumn == 'position_title') {
+                        $query->select('employees.* ')
+                            ->join('positions', 'employees.position_id', '=', 'positions.position_id')
+                            ->orderBy('positions.position_title', $orderDirection);
+                    } else {
+                        $query->orderBy($orderColumn, $orderDirection);
+                    }
                 }
             }
+
+            // Apply pagination
+            $employees = $query->skip($start)->take($length)->get();
+
+            $data = $employees->map(function ($employee) {
+                $actions = '<a href="' . route('employee.show', $employee->employee_id) . '" class="btn btn-sm btn-info"><i class="fas fa-eye"></i></a> ';
+                $actions .= '<a href="' . route('employee.edit', $employee->employee_id) . '" class="btn btn-sm btn-primary"><i class="fas fa-edit"></i></a> ';
+                $actions .= '<form action="' . route('employee.destroy', $employee->employee_id) . '" method="POST" style="display:inline-block;">';
+                $actions .= csrf_field() . method_field('DELETE');
+                $actions .= '<button type="submit" class="btn btn-sm btn-danger" onclick="return confirm(\'Are you sure?\')"><i class="fas fa-trash"></i></button>';
+                $actions .= '</form>';
+
+                $status = '';
+                if ($employee->status == 'active') {
+                    $status = '<span class="badge badge-success">Active</span>';
+                } else {
+                    $status = '<span class="badge badge-danger">Resigned</span>';
+                }
+
+                $employee->actions = $actions;
+                $employee->status = $status;
+                $employee->department_name = $employee->department->department_name;
+                $employee->position_title = $employee->position->position_title;
+                return $employee;
+            });
+
+            $response = [
+                'draw' => intval($draw),
+                'recordsTotal' => intval($totalRecords),
+                'recordsFiltered' => intval($filteredRecords),
+                'data' => $data,
+            ];
+
+            return response()->json($response);
         }
 
-        // Apply pagination
-        $employees = $query->skip($start)->take($length)->get();
 
-        $data = $employees->map(function ($employee) {
-            $actions = '<a href="' . route('employee.show', $employee->employee_id) . '" class="btn btn-sm btn-info"><i class="fas fa-eye"></i></a> ';
-            $actions .= '<a href="' . route('employee.edit', $employee->employee_id) . '" class="btn btn-sm btn-primary"><i class="fas fa-edit"></i></a> ';
-            $actions .= '<form action="' . route('employee.destroy', $employee->employee_id) . '" method="POST" style="display:inline-block;">';
-            $actions .= csrf_field() . method_field('DELETE');
-            $actions .= '<button type="submit" class="btn btn-sm btn-danger" onclick="return confirm(\'Are you sure?\')"><i class="fas fa-trash"></i></button>';
-            $actions .= '</form>';
+        /**
+         * Show the form for creating a new resource.
+         */
+        public function create()
+        {
+            $departments = Department::all();
+            do {
+                $employee_code = 'EMP-' . date('Ymd') . '-' . substr(str_shuffle("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"), 0, 6);
+            } while (Employee::where('employee_code', $employee_code)->exists());
 
-            $status = '';
-            if ($employee->status == 'active') {
-                $status = '<span class="badge badge-success">Active</span>';
-            } else {
-                $status = '<span class="badge badge-danger">Resigned</span>';
+            return view('employees.create',compact('departments','employee_code'));
+        }
+
+        /**
+         * Store a newly created resource in storage.
+         */
+        public function store(Request $request)
+        {
+            $request->validate([
+                'employee_code' => 'required|string|unique:employees,employee_code',
+                'full_name'     => 'required|string|max:255',
+                'gender'        => 'required',
+                'dob'           => 'required|date',
+                'national_id'   => 'required|string|max:255|unique:employees,national_id',
+                'email'         => 'required|email|unique:employees,email',
+                'phone_number'  => 'required',
+                'address'       => 'required|string',
+                'hire_date'     => 'required|date',
+                'department_id' => 'required|exists:departments,department_id',
+                'position_id'   => 'required|exists:positions,position_id',
+                'employee_type' => 'required|in:Full-time,Part-time,Contract',
+                'status'        => 'required|in:active,resigned',
+                'profile_photo' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+            ]);
+
+            $data = $request->all();
+
+            if ($request->hasFile('profile_photo')) {
+                $image = $request->file('profile_photo');
+                $imageName = Str::random(40).'.jpg';
+                $imagePath = public_path('uploads/employees/' . $imageName);
+                // The fix
+                Image::read($image->getRealPath())->resize(300, 300)->toJpg(80)->save($imagePath);
+                $data['profile_photo'] = 'uploads/employees/'.$imageName;
             }
 
-            $employee->actions = $actions;
-            $employee->status = $status;
-            $employee->department_name = $employee->department->department_name;
-            $employee->position_title = $employee->position->position_title;
-            return $employee;
-        });
+            Employee::create($data);
 
-        $response = [
-            'draw' => intval($draw),
-            'recordsTotal' => intval($totalRecords),
-            'recordsFiltered' => intval($filteredRecords),
-            'data' => $data,
-        ];
-
-        return response()->json($response);
-    }
-
-
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        $departments = Department::all();
-        do {
-            $employee_code = 'EMP-' . date('Ymd') . '-' . substr(str_shuffle("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"), 0, 6);
-        } while (Employee::where('employee_code', $employee_code)->exists());
-
-        return view('employees.create',compact('departments','employee_code'));
-    }
-
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
-    {
-        $request->validate([
-            'employee_code' => 'required|string|unique:employees,employee_code',
-            'full_name'     => 'required|string|max:255',
-            'gender'        => 'required',
-            'dob'           => 'required|date',
-            'national_id'   => 'required|string|max:255|unique:employees,national_id',
-            'email'         => 'required|email|unique:employees,email',
-            'phone_number'  => 'required',
-            'address'       => 'required|string',
-            'hire_date'     => 'required|date',
-            'department_id' => 'required|exists:departments,department_id',
-            'position_id'   => 'required|exists:positions,position_id',
-            'employee_type' => 'required|in:Full-time,Part-time,Contract',
-            'status'        => 'required|in:active,resigned',
-            'profile_photo' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
-        ]);
-
-        $data = $request->all();
-
-        if ($request->hasFile('profile_photo')) {
-            $image = $request->file('profile_photo');
-            $imageName = time().'.'.$image->getClientOriginalExtension();
-            $imagePath = public_path('uploads/employees/' . $imageName);
-
-            // Resize and save the image
-            Image::make($image->getRealPath())->resize(300, 300)->save($imagePath);
-
-            $data['profile_photo'] = 'uploads/employees/'.$imageName;
+            return redirect()->route('employee.get_employee')->with('success', 'Employee created successfully!');
         }
 
-        Employee::create($data);
+        /**
+         * Display the specified resource.
+         */
+        public function show(string $id)
+        {
+            $employee = Employee::findOrFail($id);
+            return view('employees.view', compact('employee'));
+        }
 
-        return redirect()->route('employee.get_employee')->with('success', 'Employee created successfully!');
-    }
+        /**
+         * Show the form for editing the specified resource.
+         */
+        public function edit(string $id)
+        {
+            $employee = Employee::findOrFail($id);
+            $departments = Department::all();
+            return view('employees.edit', compact('employee', 'departments'));
+        }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(string $id)
-    {
-        $employee = Employee::findOrFail($id);
-        return view('employees.view', compact('employee'));
-    }
+        /**
+         * Update the specified resource in storage.
+         */
+        public function update(Request $request, string $id)
+        {
+            $request->validate([
+                'employee_code' => 'required|string',
+                'full_name'     => 'required|string|max:255',
+                'gender'        => 'required',
+                'dob'           => 'required|date',
+                'national_id'   => 'required|string|max:255|unique:employees,national_id,' . $id . ',employee_id',
+                'email'         => 'required|email|unique:employees,email,' . $id . ',employee_id',
+                'phone_number'  => 'required',
+                'address'       => 'required|string',
+                'hire_date'     => 'required|date',
+                'department_id' => 'required|exists:departments,department_id',
+                'position_id'   => 'required|exists:positions,position_id',
+                'employee_type' => 'required|in:Full-time,Part-time,Contract',
+                'status'        => 'required|in:active,resigned',
+                'profile_photo' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+            ]);
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(string $id)
-    {
-        $employee = Employee::findOrFail($id);
-        $departments = Department::all();
-        return view('employees.edit', compact('employee', 'departments'));
-    }
+            $employee = Employee::findOrFail($id);
+            $data = $request->all();
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, string $id)
-    {
-        $request->validate([
-            'employee_code' => 'required|string',
-            'full_name'     => 'required|string|max:255',
-            'gender'        => 'required',
-            'dob'           => 'required|date',
-            'national_id'   => 'required|string|max:255|unique:employees,national_id,' . $id . ',employee_id',
-            'email'         => 'required|email|unique:employees,email,' . $id . ',employee_id',
-            'phone_number'  => 'required',
-            'address'       => 'required|string',
-            'hire_date'     => 'required|date',
-            'department_id' => 'required|exists:departments,department_id',
-            'position_id'   => 'required|exists:positions,position_id',
-            'employee_type' => 'required|in:Full-time,Part-time,Contract',
-            'status'        => 'required|in:active,resigned',
-            'profile_photo' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
-        ]);
+            if ($request->hasFile('profile_photo')) {
+                // Delete old photo if it exists
+                if ($employee->profile_photo && file_exists(public_path($employee->profile_photo))) {
+                    unlink(public_path($employee->profile_photo));
+                }
 
-        $employee = Employee::findOrFail($id);
-        $data = $request->all();
+                $image = $request->file('profile_photo');
+                $imageName = Str::random(40).'.jpg';
+                $imagePath = public_path('uploads/employees/' . $imageName);
+                Image::read($image->getRealPath())->resize(300, 300)->toJpg(80)->save($imagePath);
 
-        if ($request->hasFile('profile_photo')) {
-            // Delete old photo if it exists
+                $data['profile_photo'] = 'uploads/employees/'.$imageName;
+            }
+
+            unset($data['employee_code']);
+
+            $employee->update($data);
+
+            return redirect()->route('employee.get_employee')->with('success', 'Employee updated successfully!');
+        }
+
+        /**
+         * Remove the specified resource from storage.
+         */
+        public function destroy(string $id)
+        {
+            $employee = Employee::findOrFail($id);
+
+            // --- ADDITION: Delete the employee's photo from storage ---
             if ($employee->profile_photo && file_exists(public_path($employee->profile_photo))) {
                 unlink(public_path($employee->profile_photo));
             }
 
-            $image = $request->file('profile_photo');
-            $imageName = time().'.'.$image->getClientOriginalExtension();
-            $imagePath = public_path('uploads/employees/' . $imageName);
+            $employee->delete();
 
-            // Resize and save the image
-            Image::make($image->getRealPath())->resize(300, 300)->save($imagePath);
-
-            $data['profile_photo'] = 'uploads/employees/'.$imageName;
+            return redirect()->route('employee.get_employee')->with('success', 'Employee deleted successfully!');
         }
 
-        unset($data['employee_code']);
-
-        $employee->update($data);
-
-        return redirect()->route('employee.get_employee')->with('success', 'Employee updated successfully!');
+        public function getPositionsByDepartment($department_id)
+        {
+            $positions = Positions::where('department_id', $department_id)->get();
+            return response()->json($positions);
+        }
     }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id)
-    {
-        $employee = Employee::findOrFail($id);
-        $employee->delete();
-
-        return redirect()->route('employee.get_employee')->with('success', 'Employee deleted successfully!');
-    }
-
-    public function getPositionsByDepartment($department_id)
-    {
-        $positions = Positions::where('department_id', $department_id)->get();
-        return response()->json($positions);
-    }
-}
